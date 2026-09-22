@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "TouchFishPiP 摸魚畫中畫",
+  "version": "1.0.0",
+  "description": "使用 Document Picture-in-Picture 打造預設隱形、滑鼠移入才清晰顯示的低調畫中畫視窗，適合上班摸魚看影片。",
+  "icons": {
+    "16": "icons/favicon-16x16.png",
+    "32": "icons/favicon-32x32.png",
+    "48": "icons/android-chrome-192x192.png",
+    "128": "icons/android-chrome-512x512.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/favicon-16x16.png",
+      "32": "icons/favicon-32x32.png",
+      "48": "icons/android-chrome-192x192.png"
+    },
+    "default_title": "開啟／關閉摸魚畫中畫"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["scripting", "activeTab"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["pip.css"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
