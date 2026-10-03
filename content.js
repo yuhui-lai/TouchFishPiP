@@ -62,19 +62,49 @@
     btn.style.left = `${Math.max(rect.left, 0) + 6}px`;
   }
 
-  // 工具列按鈕觸發時選片：優先挑正在播放的影片，其次選畫面最大的可視影片
+  function videoArea(video) {
+    const r = video.getBoundingClientRect();
+    return r.width * r.height;
+  }
+
+  function isVideoPlaying(video) {
+    return !video.paused && !video.ended && video.readyState > 2;
+  }
+
+  // 有實際渲染尺寸即可（不要求在視窗內，播放中但已捲出畫面的影片仍是候選）
+  function isVideoRendered(video) {
+    const r = video.getBoundingClientRect();
+    return r.width > 40 && r.height > 40;
+  }
+
+  // 選片順序：1. 正在播放的影片 > 2. 網頁中畫面最大的影片
   function pickBestVideo() {
-    const candidates = Array.from(document.querySelectorAll('video')).filter(isVideoVisible);
-    if (candidates.length === 0) return null;
+    let best = null;
+    let bestPlaying = false;
+    let bestArea = 0;
+    document.querySelectorAll('video').forEach((v) => {
+      if (!isVideoRendered(v)) return;
+      const playing = isVideoPlaying(v);
+      const area = videoArea(v);
+      if (!best || (playing && !bestPlaying) || (playing === bestPlaying && area > bestArea)) {
+        best = v;
+        bestPlaying = playing;
+        bestArea = area;
+      }
+    });
+    return best;
+  }
 
-    const area = (v) => {
-      const r = v.getBoundingClientRect();
-      return r.width * r.height;
+  // 供 background.js 跨 frame 比較：回報本 frame 的最佳候選與 PiP 是否已開啟
+  function getVideoCandidate() {
+    const active = !!(state.pipWindow && !state.pipWindow.closed);
+    const video = pickBestVideo();
+    if (!video && !active) return null;
+    return {
+      active,
+      playing: video ? isVideoPlaying(video) : false,
+      area: video ? videoArea(video) : 0,
     };
-
-    const playing = candidates.filter((v) => !v.paused && !v.ended);
-    const pool = playing.length > 0 ? playing : candidates;
-    return pool.reduce((best, v) => (area(v) > area(best) ? v : best), pool[0]);
   }
 
   function trackVideo(video) {
@@ -231,11 +261,33 @@
     const btn = buttonMap.get(video);
     if (btn) btn.style.display = 'none';
 
+    const IDLE_DIM_MS = 3000;
+    let lastMoveAt = 0;
+    let watchdog = null;
+
+    // 離開事件可能漏發，變亮期間輪詢 :hover 與滑鼠閒置時間作為保險
     const setActive = (isActive) => {
       pipWindow.document.body.classList.toggle('touchfish-pip-active', isActive);
+      if (isActive && watchdog === null) {
+        watchdog = setInterval(() => {
+          const hovering = pipWindow.document.body.matches(':hover');
+          if (!hovering || Date.now() - lastMoveAt > IDLE_DIM_MS) setActive(false);
+        }, 300);
+      } else if (!isActive && watchdog !== null) {
+        clearInterval(watchdog);
+        watchdog = null;
+      }
     };
 
-    pipWindow.document.body.addEventListener('mouseenter', () => setActive(true));
+    pipWindow.document.addEventListener('mousemove', () => {
+      lastMoveAt = Date.now();
+      setActive(true);
+    });
+    pipWindow.addEventListener('pagehide', () => setActive(false), { once: true });
+    pipWindow.document.body.addEventListener('mouseenter', () => {
+      lastMoveAt = Date.now();
+      setActive(true);
+    });
     pipWindow.document.body.addEventListener('mouseleave', () => setActive(false));
     // mouseleave 在無邊框浮動視窗上偶爾不會觸發（快速移出/視窗邊緣），
     // 用 relatedTarget 為 null 判斷滑鼠真正離開整份文件，作為補強
@@ -247,6 +299,37 @@
 
     // 使用者關閉 PiP 視窗（或返回分頁）時，把影片搬回原頁面
     pipWindow.addEventListener('pagehide', () => restoreVideo(), { once: true });
+
+    // 通知 background 目前 PiP 屬於哪個分頁/frame，讓使用者在其他分頁按 icon 也能關閉
+    notifyBackground('pip-opened');
+  }
+
+  function notifyBackground(type) {
+    try {
+      chrome.runtime.sendMessage({ type }).catch(() => {});
+    } catch {
+      // 擴充功能重新載入後 context 失效，忽略
+    }
+  }
+
+  // 其他分頁按下工具列 icon 時，由 background 轉送關閉指令
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message && message.type === 'close-pip' && state.pipWindow && !state.pipWindow.closed) {
+      state.pipWindow.close(); // 觸發 pagehide -> restoreVideo()
+      sendResponse(true);
+    }
+  });
+
+  // 跨文件搬回後畫面層可能沒接上（聲音照常，重排與 seek 都無效），重新插入節點才會重建
+  function refreshVideoRendering(video) {
+    const wasPlaying = !video.paused;
+    setTimeout(() => {
+      const parent = video.parentNode;
+      if (!parent) return;
+      parent.insertBefore(video, video.nextSibling);
+      // 移除再插入可能觸發暫停，補回播放狀態
+      if (wasPlaying && video.paused) video.play().catch(() => {});
+    }, 100);
   }
 
   function restoreVideo() {
@@ -285,6 +368,8 @@
       }
     }
 
+    refreshVideoRendering(activeVideo);
+
     state.pipWindow = null;
     state.activeVideo = null;
     state.originalParent = null;
@@ -296,6 +381,7 @@
     state.videoPlayHandler = null;
     state.videoPauseHandler = null;
 
+    notifyBackground('pip-closed');
     refreshPositions();
   }
 
@@ -316,4 +402,5 @@
   // requestWindow() 需要使用者手勢，chrome.tabs.sendMessage 是非同步訊息會讓手勢流失，
   // 改由 background.js 用 chrome.scripting.executeScript 同步呼叫這個掛在 window 上的函式
   window.__touchfishToggleFromAction = handleToolbarToggle;
+  window.__touchfishGetCandidate = getVideoCandidate;
 })();
