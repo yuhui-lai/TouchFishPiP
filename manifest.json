@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TouchFishPiP 摸魚畫中畫",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "使用 Document Picture-in-Picture 打造預設隱形、滑鼠移入才清晰顯示的低調畫中畫視窗，適合上班摸魚看影片。",
   "icons": {
     "16": "icons/favicon-16x16.png",

@@ -1,9 +1,8 @@
-// TouchFishPiP：偵測頁面上的 <video>，並提供將其移入 Stealth Document PiP 視窗的按鈕
+// TouchFishPiP：由工具列 icon 觸發，將頁面上的 <video> 移入 Stealth Document PiP 視窗
 (() => {
   if (window.__touchfishPipInjected) return;
   window.__touchfishPipInjected = true;
 
-  const buttonMap = new WeakMap(); // video -> 觸發按鈕
   const state = {
     pipWindow: null,
     activeVideo: null,
@@ -16,51 +15,6 @@
     videoPlayHandler: null,
     videoPauseHandler: null,
   };
-
-  function makeButton(video) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'touchfish-pip-btn';
-    btn.textContent = '🐟';
-    btn.title = '開啟摸魚隱形畫中畫';
-    btn.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      activateStealthPiP(video).catch((err) => {
-        console.error('[TouchFishPiP]', err);
-        alert('無法開啟摸魚畫中畫：' + err.message);
-      });
-    });
-    document.body.appendChild(btn);
-    return btn;
-  }
-
-  function isVideoVisible(video) {
-    const rect = video.getBoundingClientRect();
-    return (
-      rect.width > 40 &&
-      rect.height > 40 &&
-      rect.bottom > 0 &&
-      rect.right > 0 &&
-      rect.top < window.innerHeight &&
-      rect.left < window.innerWidth
-    );
-  }
-
-  function updateButtonPosition(video, btn) {
-    if (video === state.activeVideo) {
-      btn.style.display = 'none';
-      return;
-    }
-    if (!isVideoVisible(video)) {
-      btn.style.display = 'none';
-      return;
-    }
-    const rect = video.getBoundingClientRect();
-    btn.style.display = 'flex';
-    btn.style.top = `${Math.max(rect.top, 0) + 6}px`;
-    btn.style.left = `${Math.max(rect.left, 0) + 6}px`;
-  }
 
   function videoArea(video) {
     const r = video.getBoundingClientRect();
@@ -106,47 +60,6 @@
       area: video ? videoArea(video) : 0,
     };
   }
-
-  function trackVideo(video) {
-    if (buttonMap.has(video)) return;
-    buttonMap.set(video, makeButton(video));
-  }
-
-  function scanVideos() {
-    document.querySelectorAll('video').forEach(trackVideo);
-  }
-
-  function refreshPositions() {
-    document.querySelectorAll('video').forEach((video) => {
-      const btn = buttonMap.get(video);
-      if (btn) updateButtonPosition(video, btn);
-    });
-  }
-
-  // 用 rAF 合併同一畫面更新週期內的多次觸發，避免捲動/DOM 變動時重複計算
-  function throttleToFrame(fn) {
-    let scheduled = false;
-    return () => {
-      if (scheduled) return;
-      scheduled = true;
-      requestAnimationFrame(() => {
-        scheduled = false;
-        fn();
-      });
-    };
-  }
-
-  const scheduleScanVideos = throttleToFrame(scanVideos);
-  const scheduleRefreshPositions = throttleToFrame(refreshPositions);
-
-  scanVideos();
-  const observer = new MutationObserver(scheduleScanVideos);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-
-  // capture: true 讓任何內層可捲動容器的 scroll 事件也會在冒泡前經過 window
-  window.addEventListener('scroll', scheduleRefreshPositions, { passive: true, capture: true });
-  window.addEventListener('resize', scheduleRefreshPositions, { passive: true });
-  setInterval(scheduleRefreshPositions, 2000); // 保底刷新，避免動態版面遺漏（頻率降低以減少背景負擔）
 
   async function activateStealthPiP(video) {
     if (!('documentPictureInPicture' in window)) {
@@ -257,9 +170,6 @@
 
     video.classList.add('touchfish-pip-video');
     pipWindow.document.body.appendChild(video); // 將真實 video 節點搬進 PiP 文件
-
-    const btn = buttonMap.get(video);
-    if (btn) btn.style.display = 'none';
 
     const IDLE_DIM_MS = 3000;
     let lastMoveAt = 0;
@@ -382,7 +292,6 @@
     state.videoPauseHandler = null;
 
     notifyBackground('pip-closed');
-    refreshPositions();
   }
 
   function handleToolbarToggle() {

@@ -44,7 +44,7 @@ If you have any questions, suggestions, or concerns regarding this Privacy Polic
 ### 3. 權限使用說明
 本擴充功能僅申請實現核心功能所必需的最低權限：
 - **`activeTab` 與 `scripting`：** 當您點擊瀏覽器工具列上的外掛圖示時，擴充功能需透過腳本在當前分頁同步觸發開關，藉此保留瀏覽器 Document Picture-in-Picture API (`window.documentPictureInPicture.requestWindow()`) 所嚴格要求的使用者手勢（User Gesture）。
-- **`<all_urls>`（全域主機權限）：** 用於在您造訪的各類影音網站中，由 Content Script 自動偵測標準 HTML5 `<video>` 標籤，並於影片角落掛載浮動啟動按鈕。本擴充功能不會讀取、修改或洩露其他網頁內容。
+- **`<all_urls>`（全域主機權限）：** 用於在您造訪的各類影音網站中，由 Content Script 在您點擊工具列 icon 時偵測標準 HTML5 `<video>` 標籤並移入畫中畫視窗。本擴充功能不會讀取、修改或洩露其他網頁內容。
 
 ### 4. 第三方網站與服務
 TouchFishPiP 僅在您造訪含有影片的第三方網站時提供畫中畫輔助功能。本擴充功能不會影響第三方網站處理您資料的方式，您造訪該等網站時仍受其各自的隱私權政策規範。

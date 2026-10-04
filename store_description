@@ -1,0 +1,33 @@
+TouchFishPiP 是一款專注於隱私保護的擴充功能，利用 Document Picture-in-Picture API 為網頁影片提供隱密的「子母畫面（PiP）」視窗。
+
+**主要特色：**
+
+* **工具列一鍵開關：** 點擊擴充功能圖示即可開啟子母畫面，再次點擊即可關閉。支援跨分頁操作，無需切換回原分頁也能隨時關閉。
+* **智慧選取影片：** 自動抓取當前正在播放的影片；若無播放中的影片，則會自動選取頁面中尺寸最大的影片（亦支援 iframe 內的影片）。
+* **隱身模式（摸魚模式）：** 浮動視窗預設套用高度模糊與半透明效果，守護您的螢幕隱私。
+* **懸停即現：** 滑鼠移入視窗即刻恢復清晰播放並顯示控制列；移出游標或靜止數秒後自動恢復隱蔽狀態。
+* **播放控制：** 內建倒轉 10 秒、播放／暫停以及快轉 10 秒按鈕。
+* **無縫歸位：** 關閉子母畫面視窗時，影片會立即無縫還原回原網頁位置。
+
+**使用方法：**
+
+1. 開啟任何包含 HTML5 影片的網頁。
+2. 點擊瀏覽器工具列上的擴充功能圖示，播放中（或最大）的影片即會移至浮動視窗。
+3. 將滑鼠移至浮動視窗上即可正常觀看；移開游標則自動隱藏畫面。
+4. 再次點擊擴充功能圖示或直接關閉浮動視窗，影片即會返回原網頁。
+
+TouchFishPiP is a privacy-focused extension that enables a discreet Picture-in-Picture window for web videos using the Document Picture-in-Picture API.
+
+Key Features:
+- One-Click Toolbar Button: Click the extension icon to open the PiP window, and click it again to close it. It works from any tab, so you can close the PiP window without switching back.
+- Smart Video Selection: Automatically picks the video that is currently playing; if none is playing, it picks the largest video on the page (including videos inside iframes).
+- Stealth Mode: The floating PiP window is heavily blurred and semi-transparent by default to protect your privacy.
+- Hover-to-Reveal: Move your mouse cursor into the PiP window to instantly display clear video playback and media controls. The window dims again when the cursor leaves or stays still for a few seconds.
+- Playback Controls: Built-in 10-second rewind, play/pause, and 10-second fast-forward buttons.
+- Seamless Restore: Closing the PiP window immediately returns the video to its original location on the webpage.
+
+How to Use:
+1. Open any page containing an HTML5 video.
+2. Click the extension icon on the browser toolbar. The playing (or largest) video moves into a floating window.
+3. Hover over the floating window to watch; move the cursor away to conceal the video.
+4. Click the extension icon again, or close the floating window, to return the video to the page.
